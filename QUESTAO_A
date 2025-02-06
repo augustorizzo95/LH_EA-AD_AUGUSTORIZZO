@@ -1,6 +1,5 @@
 import pandas as pd
 import matplotlib.pyplot as plt
-import seaborn as sns
 
 # Carregar os dados dos arquivos .csv
 agencias = pd.read_csv('/Users/augustorizzo/Desktop/INDICIUM/Arquivos CSV/agencias.csv')
