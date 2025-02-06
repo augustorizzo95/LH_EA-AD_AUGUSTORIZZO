@@ -1,0 +1,95 @@
+import pandas as pd
+import matplotlib.pyplot as plt
+import locale
+
+# Definir localidade no Brasil para exibir os meses em português
+locale.setlocale(locale.LC_TIME, 'pt_BR.UTF-8')
+
+# Carregar os dados dos arquivos .csv
+transacoes = pd.read_csv('/Users/augustorizzo/Desktop/INDICIUM/Arquivos CSV/transacoes.csv')
+
+# Remover frações de segundo e converter o formato da data
+transacoes['data_transacao'] = transacoes['data_transacao'].str.extract(r'(^\d{4}-\d{2}-\d{2})')[0]
+transacoes['data_transacao'] = pd.to_datetime(transacoes['data_transacao'], errors='coerce')
+
+# Remover possíveis valores nulos após a conversão
+transacoes = transacoes.dropna(subset=['data_transacao'])
+
+# Criar dimensão de datas em anos, meses, trimestre e mês
+dim_dates = pd.DataFrame({'data': pd.date_range(start=transacoes['data_transacao'].min(), end=transacoes['data_transacao'].max())})
+dim_dates['ano'] = dim_dates['data'].dt.year
+dim_dates['mes'] = dim_dates['data'].dt.month
+dim_dates['trimestre'] = dim_dates['data'].dt.quarter
+dim_dates['mes_nome'] = dim_dates['data'].dt.strftime('%B')
+
+# Dataframe para relacionar as transações com a dimensão de datas por meio da data_transacao
+transacoes = transacoes.merge(dim_dates, left_on='data_transacao', right_on='data', how='left')
+
+# Analisar qual trimestre tem a maior quantidade de transações e o maior volume de dinheiro movimentado
+trimestre_analise = transacoes.groupby('trimestre').agg(total_transacoes=('cod_transacao', 'count'),total_volume=('valor_transacao', 'sum')
+).reset_index()
+
+trimestre_mais_transacoes = trimestre_analise.loc[trimestre_analise['total_transacoes'].idxmax(), 'trimestre']
+
+trimestre_maior_volume = trimestre_analise.loc[trimestre_analise['total_volume'].idxmax(), 'trimestre']
+
+# Criar gráfico para a visualização do dataframe que analisa a maior quantidade de transações
+plt.figure(figsize=(8, 5))
+bars = plt.bar(trimestre_analise['trimestre'].astype(str), trimestre_analise['total_transacoes'], color='skyblue')
+plt.xlabel("Trimestre")
+plt.ylabel("Média de Transações Aprovadas")
+plt.title("Média de Transações Aprovadas por Trimestre")
+
+# Adicionar valores nas barras
+for bar in bars:
+    yval = bar.get_height()
+    plt.text(bar.get_x() + bar.get_width()/2, yval, f'{yval:.0f}', ha='center', va='bottom', fontsize=12)
+
+# Exibir o gráfico
+plt.show()
+
+# Criar gráfico para a visualização do dataframe que analisa a maior volume de dinheiro movimentado
+plt.figure(figsize=(8, 5))
+bars = plt.bar(trimestre_analise['trimestre'].astype(str), trimestre_analise['total_volume'], color='skyblue')
+plt.xlabel("Trimestre")
+plt.ylabel("Média de Volume das Transações")
+plt.title("Média de Volume das Transações por Trimestre")
+
+# Adicionar valores nas barras
+for bar in bars:
+    yval = bar.get_height()
+    plt.text(bar.get_x() + bar.get_width()/2, yval, f'{yval:.0f}', ha='center', va='bottom', fontsize=12)
+
+# Exibir o gráfico
+plt.show()
+
+# Criar coluna de mês e nome do mês
+transacoes['mes'] = pd.to_datetime(transacoes['data_transacao']).dt.month
+transacoes['mes_nome'] = pd.to_datetime(transacoes['data_transacao']).dt.strftime('%B')
+
+# Contar quantidade de transações por mês
+transacoes_por_mes = transacoes['mes_nome'].value_counts().reindex(['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 
+                                                                    'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'])
+
+# Identificar e diferenciar por cores os meses que contêm R no nome
+cores = ['orange' if 'r' in mes else 'skyblue' for mes in transacoes_por_mes.index]
+
+# Criar gráfico para a visualização do dataframe que analisa o número de transações em casa mês
+plt.figure(figsize=(10,6))
+bars = plt.bar(transacoes_por_mes.index, transacoes_por_mes.values, color=cores)
+
+# Adicionar valores nas barras
+for bar in bars:
+    yval = bar.get_height()
+    plt.text(bar.get_x() + bar.get_width()/2, yval, f'{int(yval)}', 
+             ha='center', va='bottom', fontsize=12)
+
+# Adicionar rótulos e título para melhor visualização
+plt.xlabel('Mês', fontsize=12)
+plt.ylabel('Quantidade de Transações', fontsize=12)
+plt.title('Quantidade de Transações por Mês', fontsize=14)
+plt.xticks(rotation=45)
+plt.grid(axis='y', linestyle='--', alpha=0.7)
+
+# Exibir o gráfico
+plt.show()
