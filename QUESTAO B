@@ -1,0 +1,98 @@
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Carregar os dados dos arquivos .csv
+agencias = pd.read_csv('/Users/augustorizzo/Desktop/INDICIUM/Arquivos CSV/agencias.csv')
+clientes = pd.read_csv('/Users/augustorizzo/Desktop/INDICIUM/Arquivos CSV/clientes.csv')
+colaborador_agencia = pd.read_csv('/Users/augustorizzo/Desktop/INDICIUM/Arquivos CSV/colaborador_agencia.csv')
+contas = pd.read_csv('/Users/augustorizzo/Desktop/INDICIUM/Arquivos CSV/contas.csv')
+propostas = pd.read_csv('/Users/augustorizzo/Desktop/INDICIUM/Arquivos CSV/propostas_credito.csv')
+
+
+### PARTE 1 - CRITÉRIO CONTA DE QUEM RECEBEU A PROPOSTA
+
+# Dataframe para relacionar as propostas à agência por meio da conta do cliente
+propostas_contas = propostas.merge(contas[['num_conta', 'cod_cliente', 'cod_agencia']], on='cod_cliente', how='left')
+
+# Dataframe para relacionar as contas ao nome da agência por meio do código da agência
+propostas_agencias_contas = propostas_contas.merge(agencias[['cod_agencia', 'nome']], on='cod_agencia', how='left')
+
+# Dataframe para contabilizar o número de propostas por agência
+propostas_por_agencia_contas = propostas_agencias_contas.groupby(['cod_agencia', 'nome'])['cod_proposta'].count().reset_index()
+
+#Renomear a coluna cod_propostas (que contabiliza o número de propostas neste dataframe) por total_propostas
+propostas_por_agencia_contas.rename(columns={'cod_proposta': 'total_propostas'}, inplace=True)
+
+# Calcular percentual em relação ao total de propostas
+total_propostas = propostas_por_agencia_contas['total_propostas'].sum()
+propostas_por_agencia_contas['percentual'] = (propostas_por_agencia_contas['total_propostas'] / total_propostas) * 100
+
+# Criar gráfico de barras para visualização do dataframe propostas_por_agencia_contas
+plt.figure(figsize=(8, 4))
+bars = plt.bar(propostas_por_agencia_contas['nome'], propostas_por_agencia_contas['total_propostas'], color='skyblue')
+
+# Adicionar valores acima das barras para melhor visualização
+for bar in bars:
+    yval = bar.get_height()
+    plt.text(bar.get_x() + bar.get_width()/2, yval, f'{yval}', ha='center', va='bottom', fontsize=12)
+
+# Configurar rótulos e título para melhor visualização
+plt.xlabel("Agências")
+plt.ylabel("Número de Propostas")
+plt.title("Propostas por Agência (critério conta do cliente)")
+plt.xticks(rotation=45, ha='right')
+plt.grid(axis='y', linestyle='--', alpha=0.7)
+
+# Exibir o gráfico
+plt.show()
+print()
+
+# Exibir o dataframe que calculou o percentual
+print(propostas_por_agencia_contas)
+print()
+
+
+### PARTE 2 - CRITÉRIO AGÊNCIA DO COLABORADOR QUE ENVIOU A PROPOSTA
+
+# Dataframe para relacionar as propostas aos colaboradores
+propostas_colaboradores = propostas.merge(colaboradores, on='cod_colaborador', how='left')
+
+# Dataframe para relacionar os colaboradores às agências
+propostas_agencias = propostas_colaboradores.merge(colaborador_agencia, on='cod_colaborador', how='left')
+
+# Dataframe para relacionar os código das agências com o nome das agências
+propostas_agencias = propostas_agencias.merge(agencias, on='cod_agencia', how='left')
+
+# Dataframe para contabilizar o número de propostas por agência
+propostas_por_agencia_colaborador = propostas_agencias.groupby(['cod_agencia', 'nome'])['cod_proposta'].count().reset_index()
+
+#Renomear a coluna cod_proposta (que contabiliza o número de propostas neste dataframe) por total_propostas
+propostas_por_agencia_colaborador.rename(columns={'cod_proposta': 'total_propostas'}, inplace=True)
+
+# Calcular percentual em relação ao total de propostas
+total_propostas = propostas_por_agencia_colaborador['total_propostas'].sum()
+propostas_por_agencia_colaborador['percentual'] = (propostas_por_agencia_colaborador['total_propostas'] / total_propostas) * 100
+
+# Criar gráfico de barras para melhor visualização
+plt.figure(figsize=(8, 4))
+bars = plt.bar(propostas_por_agencia_colaborador['nome'], propostas_por_agencia_colaborador['total_propostas'], color='skyblue')
+
+# Adicionar valores acima das barras para melhor visualização
+for bar in bars:
+    yval = bar.get_height()
+    plt.text(bar.get_x() + bar.get_width()/2, yval, f'{yval}', ha='center', va='bottom', fontsize=12)
+
+# Configurar rótulos e título para melhor visualização
+plt.xlabel("Agências")
+plt.ylabel("Número de Propostas")
+plt.title("Propostas por Agência (critério colaborador)")
+plt.xticks(rotation=45, ha='right')
+plt.grid(axis='y', linestyle='--', alpha=0.7)
+
+# Exibir o gráfico
+plt.show()
+print()
+
+# Exibir o dataframe que calculou o percentual
+print(propostas_por_agencia_colaborador)
