@@ -1,0 +1,78 @@
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Carregar os dados dos arquivos .csv
+agencias = pd.read_csv('/Users/augustorizzo/Desktop/INDICIUM/Arquivos CSV/agencias.csv')
+clientes = pd.read_csv('/Users/augustorizzo/Desktop/INDICIUM/Arquivos CSV/clientes.csv')
+
+# Extrair a UF do endereço do cliente
+clientes['uf'] = clientes['endereco'].str.extract(r'\b([A-Z]{2})\b')
+
+# Dataframe para contabilizar o número de clientes por UF
+clientes_por_uf = clientes['uf'].value_counts().reset_index()
+clientes_por_uf.columns = ['uf', 'total_clientes']
+
+# Listar quais são os UFs em que há agência física
+ufs_com_agencia = agencias['uf'].unique()
+
+# Criar gráfico de barras para visualização do dataframe clientes_por_uf
+
+plt.figure(figsize=(8, 4))
+ax = sns.barplot(x='uf', y='total_clientes', data=clientes_por_uf, color='skyblue')
+plt.title('Distribuição Geográfica dos Clientes (por UF)', fontsize=14)
+plt.xlabel('UF', fontsize=12)
+plt.ylabel('Número de Clientes', fontsize=12)
+plt.xticks(rotation=90)
+plt.grid(axis='y', linestyle='--', alpha=0.7)
+
+# Adicionar valores nas barras para melhor visualização
+for p in ax.patches:
+    height = p.get_height()
+    ax.annotate(
+        f'{int(height)}',
+        (p.get_x() + p.get_width() / 2., height),
+        ha='center', va='center',
+        xytext=(0, 5),
+        textcoords='offset points'
+        )
+
+# Exibir o gráfico
+plt.show()
+
+# Classificar os clientes entre COM e SEM agência física com base na UF do seu endereço
+clientes['tem_agencia_fisica'] = clientes['uf'].apply(lambda x: 'Com Agência Física' if x in ufs_com_agencia else 'Sem Agência Física')
+
+# Dataframe para contabilizar os clientes em cada uma das categorias
+clientes_agencia_fisica = clientes['tem_agencia_fisica'].value_counts().reset_index()
+
+# Renomear as colunas tem_agencia_fisica para categoria e count para total_clientes
+clientes_agencia_fisica.columns = ['categoria', 'total_clientes']
+
+# Dataframe para contabilizar os clientes por agência
+clientes_por_agencia = contas["cod_agencia"].value_counts().reset_index()
+
+# Renomear as colunas cod_agencia para agencia e count para numero_de_clientes
+clientes_por_agencia.columns = ["agencia", "numero_de_clientes"]
+
+# Criar gráfico de barras para visualização do dataframe clientes_agencia_fisica
+plt.figure(figsize=(8, 4))
+ax = sns.barplot(x='categoria', y='total_clientes', data=clientes_agencia_fisica, color='skyblue')
+plt.title('Clientes em Estados com e sem Agência Física', fontsize=14)
+plt.xlabel('Categoria', fontsize=12)
+plt.ylabel('Número de Clientes', fontsize=12)
+plt.grid(axis='y', linestyle='--', alpha=0.7)
+
+# Adicionar valores nas barras para melhor visualização
+for p in ax.patches:
+    height = p.get_height()
+    ax.annotate(
+        f'{int(height)}',
+        (p.get_x() + p.get_width() / 2., height),
+        ha='center', va='center',
+        xytext=(0, 5),
+        textcoords='offset points'
+        )
+
+# Exibir o gráfico
+plt.show()
