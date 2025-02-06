@@ -1,0 +1,41 @@
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Carregar os dados dos arquivos .csv
+agencias = pd.read_csv('/Users/augustorizzo/Desktop/INDICIUM/Arquivos CSV/agencias.csv')
+clientes = pd.read_csv('/Users/augustorizzo/Desktop/INDICIUM/Arquivos CSV/clientes.csv')
+contas = pd.read_csv('/Users/augustorizzo/Desktop/INDICIUM/Arquivos CSV/contas.csv')
+
+# Dataframe para relacionar os clientes às agências através das contas
+clientes_agencias = contas[['cod_cliente', 'cod_agencia']].merge(clientes[['cod_cliente']], on='cod_cliente', how='left')
+
+# Dataframe para contabilizar os clientes conforme a agência
+clientes_por_agencia = clientes_agencias.groupby('cod_agencia').nunique()['cod_cliente'].reset_index()
+clientes_por_agencia.columns = ['cod_agencia', 'total_clientes']
+
+# Adicionar o nome da agência ao dataframe anterior
+clientes_por_agencia = clientes_por_agencia.merge(agencias[['cod_agencia', 'nome']], on='cod_agencia', how='left')
+
+# Calcular o percentual de clientes de cada agência
+total_clientes_banco = clientes_por_agencia['total_clientes'].sum()
+clientes_por_agencia['percentual'] = (clientes_por_agencia['total_clientes'] / total_clientes_banco) * 100
+
+# Criar o gráfico de barras para visualização dos resultados do dataframe clientes_por_agencia
+plt.figure(figsize=(8, 4))
+bars = plt.bar(clientes_por_agencia['nome'], clientes_por_agencia['total_clientes'], color='skyblue')
+
+# Adicionar os valores acima das barras para melhor visualização
+for bar in bars:
+    yval = bar.get_height()
+    plt.text(bar.get_x() + bar.get_width()/2, yval, f'{yval}', ha='center', va='bottom', fontsize=12)
+
+# Configurar os rótulos e título do gráfico para melhor visualização
+plt.xlabel("Agências")
+plt.ylabel("Número de Clientes")
+plt.title("Distribuição de Clientes por Agência")
+plt.xticks(rotation=45, ha='right')
+plt.grid(axis='y', linestyle='--', alpha=0.7)
+
+# Exibir o gráfico
+plt.show()
