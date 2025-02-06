@@ -1,0 +1,111 @@
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Carregar os arquivos CSV
+agencias = pd.read_csv('/Users/augustorizzo/Desktop/INDICIUM/Arquivos CSV/agencias.csv')
+clientes = pd.read_csv('/Users/augustorizzo/Desktop/INDICIUM/Arquivos CSV/clientes.csv')
+contas = pd.read_csv('/Users/augustorizzo/Desktop/INDICIUM/Arquivos CSV/contas.csv')
+transacoes = pd.read_csv('/Users/augustorizzo/Desktop/INDICIUM/Arquivos CSV/transacoes.csv')
+
+# Dataframe para relacionar os dados das transações com as contas e agências
+transacoes_contas = pd.merge(pd.merge(transacoes, contas[['num_conta', 'cod_agencia']], on='num_conta', how='inner'),
+                             agencias[['cod_agencia', 'nome']], on='cod_agencia', how='inner')
+
+# Lista de tipos de transações existentes na planilha transacoes
+tipos_transacoes = ["Saque", "Pix Saque", "Compra Débito", "DOC - Recebido", "Pix - Recebido", "TED - Recebido", "Compra Crédito",
+                    "DOC - Realizado", "Pix - Realizado", "TED - Realizado", "Estorno de Debito", "Pagamento de boleto", 
+                    "Depósito em espécie", "Transferência entre CC - Débito"]
+
+# Dataframe contendo os nomes das agências
+nomes_agencias = pd.DataFrame({'nome': agencias['nome'].unique()})
+
+# Loop de for com base na lista com os tipos de transações para repetir o processo de análise e visualização gráfica dos resultados
+for tipo in tipos_transacoes:
+    
+    # Dataframe para filtrar as transações do loop em execução
+    transacoes_por_tipo = transacoes_contas[transacoes_contas['nome_transacao'] == tipo]
+    
+    # Dataframe para contabilizar as transações do tipo por agência
+    transacoes_por_agencia = transacoes_por_tipo.groupby('nome', as_index=False).size()
+
+    # Renomear a coluna size por numero_transacoes 
+    transacoes_por_agencia.columns = ['nome', 'numero_transacoes']
+    
+    # Garantir que todas as agências sejam contabilizadas, mesmo com zero transações (para não afetar o percentual)
+    contagem_transacoes = pd.merge(nomes_agencias, transacoes_por_agencia, on='nome', how='left').fillna({'numero_transacoes': 0})
+    
+    # Calcular percentual
+    total = contagem_transacoes['numero_transacoes'].sum()
+    if total == 0:
+        contagem_transacoes['percentual'] = 0.0
+        total_percentual = 0.0
+    else:
+        contagem_transacoes['percentual'] = (contagem_transacoes['numero_transacoes'] / total * 100).round(2)
+        total_percentual = 100.0
+    
+    # Criar dataframe com o número de transações de cada tipo por agência, com a última linha de informando o total
+    linha_com_total = pd.DataFrame({'nome': ['Total'], 'numero_transacoes': [total], 'percentual': [total_percentual]})
+    tabela_total_por_tipo = pd.concat([contagem_transacoes, linha_com_total], ignore_index=True)
+    
+    # Exibir a tabela tabela_total_por_tipo
+    print(f"Tabela para {tipo}:")
+    print(tabela_total_por_tipo.to_string(index=False))
+    print("\n")
+    
+    # Criar gráfico de barras para visualização do dataframe criado no loop
+    plt.figure(figsize=(6, 2))
+    ax = sns.barplot(x='nome', y='numero_transacoes', data=contagem_transacoes, color='skyblue')
+    plt.title(f'Transações do Tipo: {tipo}')
+    plt.xlabel('Agência', fontsize=12)
+    plt.ylabel('Número de Transações', fontsize=12)
+    plt.xticks(rotation=45, ha='right')
+    plt.grid(axis='y', linestyle='--', alpha=0.7)
+    
+    # Adicionar valores nas barras para melhor visualização
+    for p in ax.patches:
+        height = p.get_height()
+        ax.annotate(
+            f'{int(height)}',
+            (p.get_x() + p.get_width() / 2., height),
+            ha='center', va='center',
+            xytext=(0, 5),
+            textcoords='offset points'
+        )
+
+    # Exibir o gráfico ao final do loop
+    plt.show()
+
+# Criar tabela e gráfico geral de transações por agência
+total_transacoes_por_agencia = transacoes_contas.groupby('nome', as_index=False).size()
+total_transacoes_por_agencia.columns = ['nome', 'count']
+contagem_transacoes = pd.merge(nomes_agencias, total_transacoes_por_agencia, on='nome', how='left').fillna({'count': 0})
+
+total = contagem_transacoes['count'].sum()
+contagem_transacoes['percentual'] = (contagem_transacoes['numero_transacoes'] / total * 100).round(2) if total > 0 else 0.0
+
+linha_com_total = pd.DataFrame({'nome': ['Total'], 'count': [total], 'percentual': [100.0] if total > 0 else [0.0]})
+tabela_total_transacoes = pd.concat([contagem_transacoes, linha_com_total], ignore_index=True)
+
+print("Tabela Geral de Transações por Agência:")
+print(tabela_total_transacoes.to_string(index=False))
+
+plt.figure(figsize=(6, 2))
+ax = sns.barplot(x='nome', y='count', data=contagem_transacoes, color='skyblue')
+plt.title('Total de Transações por Agência')
+plt.xlabel('Agência', fontsize=12)
+plt.ylabel('Número de Transações', fontsize=12)
+plt.xticks(rotation=45, ha='right')
+plt.grid(axis='y', linestyle='--', alpha=0.7)
+
+for p in ax.patches:
+    height = p.get_height()
+    ax.annotate(
+        f'{int(height)}',
+        (p.get_x() + p.get_width() / 2., height),
+        ha='center', va='center',
+        xytext=(0, 5),
+        textcoords='offset points'
+    )
+
+plt.show()
